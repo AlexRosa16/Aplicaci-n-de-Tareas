@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrador de Tareas</title>
+    <link rel="stylesheet" href="nuevoadministrador.css">
+</head>
+
+<body>
+
+    <h1>Administrador de Tareas</h1>
+
+    <form>
+        Nombre de la Tarea: <input type="text" name="tarea" id="tarea"><br>
+        Descripcion: <input type="text" name="descripcion" id="descripcion"><br>
+        Tiempo estimado de trabajo (horas): <input type="number" name="tiempoestimadohoras" id="tiempoestimadohoras"><br>
+        Fecha máxima de finalización: <input type="date" name="tiempofinalizacion" id="tiempofinalizacion"><br>
+        Fecha de alta de la tarea: <input type="date" id="fechaalta"><br>
+        Estado: <select name="estadotarea" id="estadotarea">
+            <option value="Pendiente">Pendiente</option>
+            <option value="En proceso" selected>En proceso</option>
+            <option value="Finalizado">Finalizado</option>
+        </select>
+        <input type="button" value="Enviar" onclick="leerdatos()">
+    </form><br><br>
+
+    <table id="tablaTareas" border="1">
+      
+    </table>
+
+    <script>
+        let tareaEnEdicionId = null; 
+        let TareasObtenidas = []; 
+
+        async function leerdatos() {
+            const nombre = document.getElementById("tarea").value;
+            const descripcion = document.getElementById("descripcion").value;
+            const tiempoestihora = document.getElementById("tiempoestimadohoras").value;
+            const tiempofina = document.getElementById("tiempofinalizacion").value;
+            const fechaal = document.getElementById("fechaalta").value;
+            const estadota = document.getElementById("estadotarea").value;
+
+            const tarea = {
+                nombre: nombre,
+                descripcion: descripcion,
+                tiempoestihora: tiempoestihora,
+                tiempofina: tiempofina,
+                fechaal: fechaal,
+                estadota: estadota
+            };
+
+            if (tareaEnEdicionId) {
+                await actualizarTareaApi(tarea, tareaEnEdicionId);
+            } else {
+                await crearTareaApi(tarea);
+            }
+
+            tareaEnEdicionId = null; 
+            await MostrarTareasaApi();
+        }
+
+        async function crearTareaApi(tarea) {
+            try {
+                console.log("Iniciando la solicitud...");
+
+                let llamada = await fetch("http://www.alpati.net/DWEC/api/create_task", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        "task_owner": "4",
+                        "task_name": tarea.nombre,
+                        "task_description": tarea.descripcion,
+                        "task_status": tarea.estadota,
+                        "task_estimated_time": tarea.tiempoestihora,
+                        "task_deadline": tarea.tiempofina,
+                        "task_created": tarea.fechaal
+                    })
+                });
+
+                return llamada.json();
+            } catch (error) {
+                console.error('Error al crear tarea:', error);
+            }
+        }
+
+        async function actualizarTareaApi(tarea, idTarea) {
+            try {
+                console.log("Iniciando la solicitud para actualizar tarea...");
+
+                let llamada = await fetch(`http://www.alpati.net/DWEC/api/update_task/${idTarea}`, {
+                    method: "PUT",
+                    body: JSON.stringify({
+                        "task_name": tarea.nombre,
+                        "task_description": tarea.descripcion,
+                        "task_status": tarea.estadota,
+                        "task_estimated_time": tarea.tiempoestihora,
+                        "task_deadline": tarea.tiempofina,
+                        "task_created": tarea.fechaal
+                    })
+                });
+
+                if (llamada.ok) {
+                    console.log('Tarea actualizada correctamente');
+                } else {
+                    console.error('Error al actualizar tarea:', llamada.status);
+                }
+            } catch (error) {
+                console.error('Error al actualizar tarea:', error);
+            }
+        }
+
+        async function ObtenerTareas() {
+            let llamadaObtenerTareas = await fetch("http://www.alpati.net/DWEC/api/get_user_tasks/4");
+            TareasObtenidas = await llamadaObtenerTareas.json();
+        }
+
+        async function MostrarTareasaApi() {
+            await ObtenerTareas();
+
+            const tablaTareas = document.getElementById("tablaTareas");
+            tablaTareas.innerHTML = ''; 
+
+                const trtablaadministradortitulos = document.createElement("tr");
+
+                const nombretr = document.createElement("td");
+                nombretr.textContent = "Nombre";
+                nombretr.classList.add("Titulo");
+
+                const descripciontr = document.createElement("td");
+                descripciontr.textContent = "Descripcion";
+                descripciontr.classList.add("Titulo");
+
+                const tiempoestitr = document.createElement("td");
+                tiempoestitr.textContent = "Tiempo Estimado";
+                tiempoestitr.classList.add("Titulo");
+
+                const tiempofinatr = document.createElement("td");
+                tiempofinatr.textContent = "Fecha Finalizacion";
+                tiempofinatr.classList.add("Titulo");
+
+                const fechaaltr = document.createElement("td");
+                fechaaltr.textContent = "Fecha de Alta";
+                fechaaltr.classList.add("Titulo");
+              
+                const estadotr = document.createElement("td");
+                estadotr.textContent = "Estado";
+                estadotr.classList.add("Titulo");
+
+                const botonestr = document.createElement("td");
+                botonestr.textContent = "Botones";
+                botonestr.classList.add("Titulo");
+
+                trtablaadministradortitulos.appendChild(nombretr);
+                trtablaadministradortitulos.appendChild(descripciontr);
+                trtablaadministradortitulos.appendChild(tiempoestitr);
+                trtablaadministradortitulos.appendChild(tiempofinatr);
+                trtablaadministradortitulos.appendChild(fechaaltr);
+                trtablaadministradortitulos.appendChild(estadotr);
+                trtablaadministradortitulos.appendChild(botonestr);
+
+                tablaTareas.appendChild(trtablaadministradortitulos);
+
+
+
+            for (let i = 0; i < TareasObtenidas.length; i++) {
+                const trtablaadministrador = document.createElement("tr");
+
+                const nombretd = document.createElement("td");
+                nombretd.textContent = TareasObtenidas[i].task_name;
+
+                const descripciontd = document.createElement("td");
+                descripciontd.textContent = TareasObtenidas[i].task_description;
+
+                const tiempoestitd = document.createElement("td");
+                tiempoestitd.textContent = TareasObtenidas[i].task_estimated_time;
+
+                const tiempofinatd = document.createElement("td");
+                tiempofinatd.textContent = TareasObtenidas[i].task_deadline;
+
+                const fechaaltd = document.createElement("td");
+                fechaaltd.textContent = TareasObtenidas[i].task_created;
+
+                const estadotatd = document.createElement("td");
+                const estadoprocesoselect = document.createElement("select");
+                estadoprocesoselect.classList.add("estadoselect");
+
+                const opciones = ["En proceso", "Pendiente", "Finalizado"];
+                opciones.forEach(function (opcion) {
+                    const option = document.createElement('option');
+                    option.value = opcion;
+                    option.text = opcion;
+                    if (opcion === TareasObtenidas[i].task_status) {
+                        option.selected = true;
+                    }
+                    estadoprocesoselect.appendChild(option);
+                });
+
+                const botonestd = document.createElement("td");
+
+                const eliminarButton = document.createElement("button");
+                eliminarButton.classList.add("eliminar");
+                eliminarButton.textContent = "Eliminar";
+                eliminarButton.addEventListener("click", () => eliminarTareaApi(TareasObtenidas[i].task_id));
+
+                const modificarButton = document.createElement("button");
+                modificarButton.classList.add("modificar");
+                modificarButton.textContent = "Modificar";
+                modificarButton.addEventListener("click", () => modificarTarea(TareasObtenidas[i]));
+
+                trtablaadministrador.appendChild(nombretd);
+                trtablaadministrador.appendChild(descripciontd);
+                trtablaadministrador.appendChild(tiempoestitd);
+                trtablaadministrador.appendChild(tiempofinatd);
+                trtablaadministrador.appendChild(fechaaltd);
+                trtablaadministrador.appendChild(estadotatd);
+                estadotatd.appendChild(estadoprocesoselect);
+                trtablaadministrador.appendChild(botonestd);
+                botonestd.appendChild(eliminarButton);
+                botonestd.appendChild(modificarButton);
+
+                tablaTareas.appendChild(trtablaadministrador);
+            }
+        }
+
+        async function eliminarTareaApi(idTarea) {
+            try {
+                console.log("Iniciando la solicitud para eliminar tarea...");
+
+                let llamada = await fetch(`http://www.alpati.net/DWEC/api/delete_task/${idTarea}`, {
+                    method: "DELETE"
+                });
+
+                if (llamada.ok) {
+                    console.log('Tarea eliminada correctamente');
+                } else {
+                    console.error('Error al eliminar tarea:', llamada.status);
+                }
+            } catch (error) {
+                console.error('Error al eliminar tarea:', error);
+            }
+
+            await MostrarTareasaApi(); 
+        }
+
+        function modificarTarea(tarea) {
+            tareaEnEdicionId = tarea.task_id; 
+            document.getElementById('tarea').value = tarea.task_name;
+            document.getElementById('descripcion').value = tarea.task_description;
+            document.getElementById('estadotarea').value = tarea.task_status;
+            document.getElementById('tiempoestimadohoras').value = tarea.task_estimated_time;
+            document.getElementById('tiempofinalizacion').value = tarea.task_deadline;
+            document.getElementById('fechaalta').value = tarea.task_created;
+        }
+
+        
+        MostrarTareasaApi();
+    </script>
+
+</body>
+
+</html>
